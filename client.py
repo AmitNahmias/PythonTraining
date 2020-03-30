@@ -20,9 +20,7 @@ class Client(object):
         self.client_socket = socket.socket()
 
     def recive_data_from_client(self):
-        """
-        Getting from client message
-        """
+        """ Getting from client message """
         data = self.client_socket.recv(BUFFER_SIZE)
         print(data.decode())
 
@@ -31,22 +29,22 @@ class Client(object):
         The method sends message to the room from the client, after encoding and converting to bytes
         :param message_to_send: the message that we want to send :str
         """
-        message_to_send_after_encode = message_to_send.encode()
-        self.client_socket.send(bytes(message_to_send_after_encode))
+        self.client_socket.send(bytes(message_to_send.encode()))
 
     def enter_to_room(self, room_id: str):
         """
-        The method joining the user to existing room
+        The method joining the user to existing room.
         :param room_id: the id of the room that the user wanna join to :str
         """
         self.client_socket.connect((LOCAL_HOST, int(room_id)))
+        login_msg_from_room = self.client_socket.recv(BUFFER_SIZE).decode()
+        if login_msg_from_room == "Hello, what is your name?":
+            self.client_socket.send(bytes(self.user_name.encode()))
         print("Dear {}, \nWelcome to room number {}".format(self.user_name, room_id))
 
     def leave_room(self):
-        """
-        This method gives to the user the option to leave the room that he is connected to
-        """
-        verify = input("For disconnecting write yes: ")
+        """ This method gives to the user the option to leave the room that he is connected to """
+        verify = input("For disconnecting replay yes: ")
         if verify == "yes":
             self.client_socket.close()
         else:
