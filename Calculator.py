@@ -1,21 +1,3 @@
-class math_funcs(object):
-    """This class include special math funcs"""
-
-    @staticmethod
-    def factorial(num: str):
-        """Doing factorial math function"""
-        fact = 1
-        for n in range(1, int(num) + 1):
-            fact = fact * n
-        return fact
-
-    @staticmethod
-    def average(num1: int, num2: int):
-        """"Doing average between two numbers"""
-        avg = (num1 + num2) / 2
-        return avg
-
-
 class Calculator(object):
     """The class defines calculator with operations order"""
 
@@ -25,19 +7,19 @@ class Calculator(object):
         also getting a list that contains split string that represents math exercise.
         """
         self.list_of_exercise = list_of_exercise
-        self.dict_of_operations_volume_5 = {"&": lambda num1, num2: min(num1, num2),
-                                            "$": lambda num1, num2: max(num1, num2),
-                                            "@": lambda num1, num2: math_funcs.average(num1, num2)}
-        self.dict_of_operations_volume_4 = {"!": lambda num: math_funcs.factorial(num),
-                                            "%": lambda num1, num2: num1 % num2}
-        self.dict_of_operations_volume_3 = {"^": lambda num1, num2: num1 ** num2}
-        self.dict_of_operations_volume_2 = {"*": lambda num1, num2: num1 * num2,
-                                            "/": lambda num1, num2: num1 / num2}
-        self.dict_of_operations_volume_1 = {"+": lambda num1, num2: num1 + num2,
-                                            "-": lambda num1, num2: num1 - num2}
-        self.list_of_dicts = [self.dict_of_operations_volume_5, self.dict_of_operations_volume_4,
-                              self.dict_of_operations_volume_3, self.dict_of_operations_volume_2,
-                              self.dict_of_operations_volume_1]
+        self.dict_of_operations_prioritize_5 = {"&": lambda num1, num2: min(num1, num2),
+                                                "$": lambda num1, num2: max(num1, num2),
+                                                "@": lambda num1, num2: (num1 + num2) / 2}
+        self.dict_of_operations_prioritize_4 = {"!": lambda fact, num: num * fact(fact, num - 1) if num > 0 else 1,
+                                                "%": lambda num1, num2: num1 % num2}
+        self.dict_of_operations_prioritize_3 = {"^": lambda num1, num2: num1 ** num2}
+        self.dict_of_operations_prioritize_2 = {"*": lambda num1, num2: num1 * num2,
+                                                "/": lambda num1, num2: num1 / num2}
+        self.dict_of_operations_prioritize_1 = {"+": lambda num1, num2: num1 + num2,
+                                                "-": lambda num1, num2: num1 - num2}
+        self.list_of_prioritize = [self.dict_of_operations_prioritize_5, self.dict_of_operations_prioritize_4,
+                                   self.dict_of_operations_prioritize_3, self.dict_of_operations_prioritize_2,
+                                   self.dict_of_operations_prioritize_1]
 
     def change_list(self, result, index: int):
         """The function changing list values after calculate"""
@@ -45,9 +27,9 @@ class Calculator(object):
         self.list_of_exercise.pop(index + 1)
         self.list_of_exercise.pop(index - 1)
 
-    def scan_and_calculate(self):
-        """The function scan the exercise and calculating him according math order"""
-        for dictionary in self.list_of_dicts:
+    def calculate(self):
+        """The function calculating exercise according specific math order"""
+        for dictionary in self.list_of_prioritize:
             i = 0
             while i < len(self.list_of_exercise):
                 sign = self.list_of_exercise[i]
@@ -64,12 +46,27 @@ class Calculator(object):
 
 
 def main():
-    exercise = input("Write a exercise:")
-    lst_from_exercise = exercise.split()
-    my_instance = Calculator(lst_from_exercise)
-    while len(lst_from_exercise) > 1:
-        my_instance.scan_and_calculate()
-    print(lst_from_exercise[0])
+    exercise = input("Write an exercise:")
+    lst_from_exercise = []
+    temp = ""
+    for p in exercise:
+        lst_from_exercise.append(p)
+    lst_from_exercise_after_sort = [""]
+    for pos in lst_from_exercise:
+        if pos.isnumeric():
+            temp = temp + pos
+        elif pos == " ":
+            pass
+        else:
+            lst_from_exercise_after_sort.append(temp)
+            lst_from_exercise_after_sort.append(pos)
+            temp = ""
+    lst_from_exercise_after_sort.pop(0)
+    lst_from_exercise_after_sort.append(pos)
+    my_instance = Calculator(lst_from_exercise_after_sort)
+    while len(lst_from_exercise_after_sort) > 1:
+        my_instance.calculate()
+    print(lst_from_exercise_after_sort[0])
 
 
 if __name__ == '__main__':
