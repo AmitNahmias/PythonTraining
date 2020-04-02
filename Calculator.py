@@ -27,8 +27,24 @@ class Calculator(object):
         self.list_of_exercise.pop(index + 1)
         self.list_of_exercise.pop(index - 1)
 
+    def handle_in_parenthesis(self, some_list: list):
+        """ This function handel in use of [ ] in the exercise """
+        if "[" in some_list:
+            opening = some_list.index("[")
+            if some_list[::-1].index("]") == 0:
+                closing = len(some_list) - some_list[::-1].index("]") - 1
+            else:
+                closing = len(some_list) - some_list[::-1].index("]")
+            temp_list = some_list[opening + 1:closing - 1]
+            self.handle_in_parenthesis(temp_list)
+            temp_instance = Calculator(temp_list)
+            return temp_instance.calculate()
+
     def calculate(self):
         """The function calculating exercise according specific math order"""
+        if "[" in self.list_of_exercise:
+            self.list_of_exercise
+            self.handle_in_parenthesis(self.list_of_exercise)
         for dictionary in self.list_of_prioritize:
             i = 0
             while i < len(self.list_of_exercise):
@@ -48,21 +64,31 @@ class Calculator(object):
 def main():
     exercise = input("Write an exercise:")
     lst_from_exercise = []
-    temp = ""
     for p in exercise:
-        lst_from_exercise.append(p)
+        if p != " ":
+            lst_from_exercise.append(p)
     lst_from_exercise_after_sort = [""]
+    temp = ""
     for pos in lst_from_exercise:
         if pos.isnumeric():
             temp = temp + pos
-        elif pos == " ":
-            pass
         else:
-            lst_from_exercise_after_sort.append(temp)
-            lst_from_exercise_after_sort.append(pos)
-            temp = ""
+            if pos in ["[", "]"]:
+                if pos == "]":
+                    lst_from_exercise_after_sort.append(temp)
+                    temp = ""
+                    lst_from_exercise_after_sort.append(pos)
+                else:
+                    lst_from_exercise_after_sort.append(pos)
+            else:
+                if lst_from_exercise_after_sort[-1] == "]":
+                    lst_from_exercise_after_sort.append(pos)
+                else:
+                    lst_from_exercise_after_sort.append(temp)
+                    temp = ""
+                    lst_from_exercise_after_sort.append(pos)
+    lst_from_exercise_after_sort.append(temp)
     lst_from_exercise_after_sort.pop(0)
-    lst_from_exercise_after_sort.append(pos)
     my_instance = Calculator(lst_from_exercise_after_sort)
     while len(lst_from_exercise_after_sort) > 1:
         my_instance.calculate()
