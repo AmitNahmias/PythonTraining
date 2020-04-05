@@ -1,5 +1,5 @@
 class Calculator(object):
-    """The class defines calculator with operations order"""
+    """ The class defines calculator with operations order according to specific instructions """
 
     def __init__(self, list_of_exercise: list):
         """
@@ -27,24 +27,26 @@ class Calculator(object):
         self.list_of_exercise.pop(index + 1)
         self.list_of_exercise.pop(index - 1)
 
-    def handle_in_parenthesis(self, some_list: list):
-        """ This function handel in use of [ ] in the exercise """
-        if "[" in some_list:
-            opening = some_list.index("[")
-            if some_list[::-1].index("]") == 0:
-                closing = len(some_list) - some_list[::-1].index("]") - 1
-            else:
-                closing = len(some_list) - some_list[::-1].index("]")
-            temp_list = some_list[opening + 1:closing - 1]
-            self.handle_in_parenthesis(temp_list)
-            temp_instance = Calculator(temp_list)
-            return temp_instance.calculate()
+    def exercise_handler(self):
+        """ This function handel in use of [ ] in the exercise and using calculate method"""
+        while "[" in self.list_of_exercise:
+            temp_list = []
+            opening = len(self.list_of_exercise) - self.list_of_exercise[::-1].index("[") - 1
+            closing = self.list_of_exercise.index("]")
+            index = closing
+            while index >= opening:
+                temp_list.insert(0, self.list_of_exercise.pop(index))
+                index -= 1
+            temp_list.pop(0)
+            temp_list.pop(len(temp_list) - 1)
+            temp_instance_of_calc = Calculator(temp_list)
+            result = temp_instance_of_calc.calculate()
+            self.list_of_exercise.insert(opening, result)
+        else:
+            self.calculate()
 
     def calculate(self):
         """The function calculating exercise according specific math order"""
-        if "[" in self.list_of_exercise:
-            self.list_of_exercise
-            self.handle_in_parenthesis(self.list_of_exercise)
         for dictionary in self.list_of_prioritize:
             i = 0
             while i < len(self.list_of_exercise):
@@ -59,6 +61,7 @@ class Calculator(object):
                     self.change_list(result, self.list_of_exercise.index(sign))
                     i -= 2
                 i += 1
+        return self.list_of_exercise[0]
 
 
 def main():
@@ -89,9 +92,10 @@ def main():
                     lst_from_exercise_after_sort.append(pos)
     lst_from_exercise_after_sort.append(temp)
     lst_from_exercise_after_sort.pop(0)
+    lst_from_exercise_after_sort.pop(len(lst_from_exercise_after_sort) - 1)
     my_instance = Calculator(lst_from_exercise_after_sort)
     while len(lst_from_exercise_after_sort) > 1:
-        my_instance.calculate()
+        my_instance.exercise_handler()
     print(lst_from_exercise_after_sort[0])
 
 
