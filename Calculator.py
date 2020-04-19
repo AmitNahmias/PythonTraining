@@ -5,6 +5,7 @@ class Calculator(object):
         """
         Defines five different dictionaries according specific math orders,
         also getting a list that contains split string that represents math exercise.
+        @param list_of_exercise: list that contains exercise :list
         """
         self.list_of_exercise = list_of_exercise
         self.dict_of_operations_prioritize_5 = {"&": lambda num1, num2: min(num1, num2),
@@ -22,13 +23,17 @@ class Calculator(object):
                                    self.dict_of_operations_prioritize_1]
 
     def change_list(self, result, index: int):
-        """The function changing list values after calculate"""
+        """
+        Changing list values after calculate
+        @param result: the result of the calculate
+        @param index: the index of the result should be in the list
+        """
         self.list_of_exercise[index] = result
         self.list_of_exercise.pop(index + 1)
         self.list_of_exercise.pop(index - 1)
 
     def exercise_handler(self):
-        """ This function handel in use of [ ] in the exercise and using calculate method"""
+        """ This function handle in use of [ ] in the exercise and using calculate method"""
         while "[" in self.list_of_exercise:
             temp_list = []
             opening = len(self.list_of_exercise) - self.list_of_exercise[::-1].index("[") - 1
@@ -64,8 +69,12 @@ class Calculator(object):
         return self.list_of_exercise[0]
 
 
-def main():
-    exercise = input("Write an exercise:")
+def sorting_exercise_to_list(exercise: str):
+    """
+    Sorting string that contains exercise to new list
+    @param exercise: contains exercise :str
+    @return: list that contains the exercise
+    """
     lst_from_exercise = []
     for p in exercise:
         if p != " ":
@@ -93,10 +102,20 @@ def main():
     lst_from_exercise_after_sort.append(temp)
     lst_from_exercise_after_sort.pop(0)
     lst_from_exercise_after_sort.pop(len(lst_from_exercise_after_sort) - 1)
-    my_instance = Calculator(lst_from_exercise_after_sort)
-    while len(lst_from_exercise_after_sort) > 1:
+    return lst_from_exercise_after_sort
+
+
+def main():
+    """
+    main() -> NoneType
+    Control the flow of the program
+    """
+    exercise = input("Write an exercise:")
+    my_lst = sorting_exercise_to_list(exercise)
+    my_instance = Calculator(my_lst)
+    while len(my_lst) > 1:
         my_instance.exercise_handler()
-    print(lst_from_exercise_after_sort[0])
+    print(my_lst[0])
 
 
 if __name__ == '__main__':
