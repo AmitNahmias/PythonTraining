@@ -20,7 +20,7 @@ class Server(object):
         """ This method opening the server side """
         self.server_socket.bind((self.ip, self.port))
         self.server_socket.listen()
-        print("Server opened and listening on local host in port: {}".format(self.port))
+        print("Server opened and listening on {} in port: {}".format(self.ip, self.port))
         self.rooms_list.append(str(self.port))
 
     def close_server(self):
@@ -28,3 +28,11 @@ class Server(object):
         self.server_socket.close()
         self.rooms_list.remove(str(self.port))
         print("Server closed!")
+
+
+    def open_rooms(self):
+        """
+        Show's the open room according to client's request
+        @return: rooms list : list
+        """
+        return self.rooms_list

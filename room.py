@@ -28,13 +28,6 @@ class Room(object):
         user_name = connection.recv(BUFFER_SIZE).decode()
         self.client_dict[connection] = user_name
 
-    def logout(self, connection_that_left: socket):
-        """
-        The method removes client from the client dictionary.
-        :param connection_that_left: the socket that connected to the leaving client.
-        """
-        self.client_dict.pop(connection_that_left)
-
     def recv_msg(self, connection: socket):
         """
         The method receives message from client.
