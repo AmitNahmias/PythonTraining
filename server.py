@@ -22,8 +22,7 @@ class Server(object):
         """ This method opening the server side """
         self.server_socket.bind((self.ip, self.port))
         self.server_socket.listen(5)
-        self.server_socket.setblocking(True)
-        print("Server opened and listening on {} in port: {}".format(self.ip, self.port))
+        print("Server opened and listening on {} in port {}".format(self.ip, self.port))
 
     def close_server(self):
         """ This method close the server """
@@ -52,12 +51,12 @@ class Server(object):
             pass
 
     def home_bar_menu(self):
+        """ Login the client to room or give him the option to create one """
         while self.inputs:
             new_connections, writable, exceptional = select.select(self.inputs, self.inputs, self.inputs)
-            for srv in new_connections:
-                if srv is self.server_socket:
-                    connection, client_address = srv.accept()
-                    #connection.setblocking(True)
+            for new_con in new_connections:
+                if new_con is self.server_socket:
+                    connection, client_address = new_con.accept()
                     client_name = connection.recv(BUFFER_SIZE).decode()
                     connection.send(
                         bytes("Hello, for create new room press 1, for enter existing room press 2: ".encode()))
@@ -67,11 +66,15 @@ class Server(object):
                         new_room_id = connection.recv(BUFFER_SIZE).decode()
                         new_room = self.create_room(new_room_id)
                         new_room.add_client_connection_to_dict(connection, client_name)
+                        connection.send(bytes("Room number {} has been opened".format(new_room_id).encode()))
+
                     elif client_choice == "2":
                         connection.send(bytes(
                             "This is the room that are open: {}".format(list(self.rooms_dict.keys())).encode()))
                         client_chosen_room: str = connection.recv(BUFFER_SIZE).decode()
                         self.rooms_dict[client_chosen_room].add_client_connection_to_dict(connection, client_name)
+                        self.rooms_dict[client_chosen_room].login_new_client_to_room(connection)
+                        connection.send(bytes("Welcome to room number {}".format(client_chosen_room).encode()))
 
 
 def main():

@@ -1,4 +1,4 @@
-import socket
+import socket, select
 
 BUFFER_SIZE = 1024
 
@@ -22,42 +22,51 @@ class Room(object):
         """
         self.client_dict[client_socket] = client_user_name
 
-    def remove_client_connection_from_dict(self, client_socket: socket):
+    def login_new_client_to_room(self, new_client_in_room: socket):
         """
-        Removes client from room's dict
-        @param client_socket: the connection to the client we wanna remove
+        Announces that client joined to room
+        @param new_client_in_room: the new client's connection :socket
         """
-        del self.client_dict[client_socket]
+        for client in self.client_dict:
+            if client != new_client_in_room:
+                try:
+                    client.send(bytes("{} joined to the room".format(self.client_dict[new_client_in_room].encode())))
+                except ConnectionResetError or ConnectionAbortedError:
+                    self.logout_client_from_room(client)
 
-# def forward_msg_from_client_to_all_room(self, data_from_client: bytes,
-#                                         connection_to_user_that_send_the_msg: socket):
-#     """
-#     The method forwarding the message from one client to all the other clients in the room,
-#     if user has been disconnecting the method will remove him from the client dictionary.
-#     @param data_from_client: the message that the client sent :bytes
-#     @param connection_to_user_that_send_the_msg: the client who sent the message socket's
-#     """
-#     for conn in self.client_dict:
-#         if conn != connection_to_user_that_send_the_msg:
-#             try:
-#                 conn.send("{} said: {} ".format(self.client_dict[conn], data_from_client))
-#             except ConnectionAbortedError or ConnectionResetError:
-#                 self.client_dict.pop(conn)
-#         else:
-#             pass
+    def logout_client_from_room(self, connection_to_client_that_left: socket):
+        """
+        Announces that client left the room
+        @param connection_to_client_that_left: the connection to the client that left :socket
+        """
+        for client in self.client_dict:
+            if client != connection_to_client_that_left:
+                client.send(
+                    bytes("{} has left the room".format(self.client_dict[connection_to_client_that_left].encode())))
+        del self.client_dict[connection_to_client_that_left]
 
-# def login_client_to_room(self):
-#     # TODO: run in thread from the server script inside login_to_chat method
-#     """
-#     Accepting client to room and announces to all the room users
-#     @return:
-#     """
-#     connection, address = self.room_socket.accept()
-#     user_name = connection.recv(BUFFER_SIZE)
-#     for conn in self.client_dict:
-#         try:
-#             conn.send(bytes("{} joined to the room".format(user_name)))
-#         except ConnectionResetError or ConnectionAbortedError:
-#             self.client_dict.pop(conn)
-#     self.client_dict[connection] = user_name
-#     self.forward_msg_from_client_to_all_room(user_name, connection)
+    def recv_data_from_client(self, client_socket: socket):
+        """
+        Receiving data from client
+        @param client_socket: the connection to the client who sent the message :socket
+        @return: data -> message
+        """
+        return client_socket.recv(BUFFER_SIZE).decode()
+
+    def forward_msg_from_client_to_all_room(self, data_from_client: bytes,
+                                            connection_to_user_that_send_the_msg: socket):
+        """
+        The method forwarding the message from one client to all the other clients in the room,
+        if user has been disconnecting the method will remove him from the client dictionary.
+        @param data_from_client: the message that the client sent :bytes
+        @param connection_to_user_that_send_the_msg: the client who sent the message socket's :socket
+        """
+        while len(self.client_dict) > 1:
+            for conn in self.client_dict:
+                if conn != connection_to_user_that_send_the_msg:
+                    try:
+                        conn.send("{} said: {} ".format(self.client_dict[conn], data_from_client))
+                    except ConnectionAbortedError or ConnectionResetError:
+                        self.logout_client_from_room(conn)
+                else:
+                    pass
