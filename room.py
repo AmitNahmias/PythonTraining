@@ -1,4 +1,4 @@
-import socket, select
+import socket, select, queue
 
 BUFFER_SIZE = 1024
 
@@ -13,6 +13,8 @@ class Room(object):
         """
         self.room_id = room_id
         self.client_dict = {}
+        self.outputs = []
+        self.msg_queues = {}
 
     def add_client_connection_to_dict(self, client_socket: socket, client_user_name: str):
         """
@@ -21,6 +23,7 @@ class Room(object):
         @param client_user_name: the user name of the client
         """
         self.client_dict[client_socket] = client_user_name
+        self.msg_queues[client_socket] = queue.Queue()
 
     def login_new_client_to_room(self, new_client_in_room: socket):
         """
@@ -30,7 +33,7 @@ class Room(object):
         for client in self.client_dict:
             if client != new_client_in_room:
                 try:
-                    client.send(bytes("{} joined to the room".format(self.client_dict[new_client_in_room].encode())))
+                    client.send(bytes("{} joined to the room".format(self.client_dict[new_client_in_room]).encode()))
                 except ConnectionResetError or ConnectionAbortedError:
                     self.logout_client_from_room(client)
 
@@ -43,30 +46,45 @@ class Room(object):
             if client != connection_to_client_that_left:
                 client.send(
                     bytes("{} has left the room".format(self.client_dict[connection_to_client_that_left].encode())))
+        del self.msg_queues[connection_to_client_that_left]
         del self.client_dict[connection_to_client_that_left]
 
-    def recv_data_from_client(self, client_socket: socket):
-        """
-        Receiving data from client
-        @param client_socket: the connection to the client who sent the message :socket
-        @return: data -> message
-        """
-        return client_socket.recv(BUFFER_SIZE).decode()
-
-    def forward_msg_from_client_to_all_room(self, data_from_client: bytes,
+    def forward_msg_from_client_to_all_room(self, data_from_client,
                                             connection_to_user_that_send_the_msg: socket):
         """
-        The method forwarding the message from one client to all the other clients in the room,
+        Forwarding the message from one client to all the other clients in the room,
         if user has been disconnecting the method will remove him from the client dictionary.
         @param data_from_client: the message that the client sent :bytes
         @param connection_to_user_that_send_the_msg: the client who sent the message socket's :socket
         """
-        while len(self.client_dict) > 1:
-            for conn in self.client_dict:
-                if conn != connection_to_user_that_send_the_msg:
-                    try:
-                        conn.send("{} said: {} ".format(self.client_dict[conn], data_from_client))
-                    except ConnectionAbortedError or ConnectionResetError:
-                        self.logout_client_from_room(conn)
+        for conn in self.client_dict:
+            if conn != connection_to_user_that_send_the_msg:
+                try:
+                    conn.send(bytes(data_from_client.encode()))
+                except ConnectionAbortedError or ConnectionResetError:
+                    self.logout_client_from_room(conn)
+            else:
+                pass
+
+    def forwarder(self):
+        """
+        Hopefully will do the magic in chat
+        """
+        while self.client_dict:
+            readable, writable, exceptional = select.select(self.client_dict, self.outputs, self.client_dict)
+            for client_connection in readable:
+                data = client_connection.recv(BUFFER_SIZE).decode()
+                if data:
+                    self.msg_queues[client_connection].put(data)
+                    if client_connection not in self.outputs:
+                        self.outputs.append(client_connection)
+                elif data == "Exit":
+                    self.logout_client_from_room(client_connection)
+                    self.outputs.remove(client_connection)
+            for client_connection in writable:
+                try:
+                    next_msg = self.msg_queues[client_connection].get_nowait()
+                except queue.Empty:
+                    self.outputs.remove(client_connection)
                 else:
-                    pass
+                    self.forward_msg_from_client_to_all_room(next_msg, client_connection)

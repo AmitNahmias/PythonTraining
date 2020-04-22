@@ -1,4 +1,6 @@
 import socket, threading, queue, select
+import time
+
 from room import Room
 
 BUFFER_SIZE = 1024
@@ -29,7 +31,19 @@ class Server(object):
         self.server_socket.close()
         print("Server closed!")
 
-    def create_room(self, room_id: int):
+    def delete_room(self, room_instance: Room):
+        """
+        Checks if room is empty, if he is empty it's deleting the room from rooms_dict
+        @param room_instance: the room we wanna check
+        """
+        while True:
+            if not bool(room_instance.client_dict):
+                del self.rooms_dict[room_instance.room_id]
+                break
+            else:
+                time.sleep(7)
+
+    def create_room(self, room_id):
         """
         Creates new room with id that the client chosen
         @param room_id: the room id of the room :int
@@ -38,17 +52,11 @@ class Server(object):
         room_instance = Room(room_id)
         self.rooms_dict[room_id] = room_instance
         print("New room has been created with the id: {}".format(room_id))
+        # check_for_closing_room_thread = threading.Thread(target=self.delete_room(room_instance))
+        # check_for_closing_room_thread.start()
+        forwarder_thread = threading.Thread(target=room_instance.forwarder())
+        forwarder_thread.start()
         return room_instance
-
-    def delete_room(self, room_instance: Room):
-        """
-        Checks if room is empty, if he is empty it's deleting the room from rooms_dict
-        @param room_instance: the room we wanna check
-        """
-        if not bool(room_instance.client_dict):
-            del self.rooms_dict[room_instance.room_id]
-        else:
-            pass
 
     def home_bar_menu(self):
         """ Login the client to room or give him the option to create one """
@@ -59,7 +67,8 @@ class Server(object):
                     connection, client_address = new_con.accept()
                     client_name = connection.recv(BUFFER_SIZE).decode()
                     connection.send(
-                        bytes("Hello, for create new room press 1, for enter existing room press 2: ".encode()))
+                        bytes("Hello {},\nFor create new room press 1, for enter existing room press 2: ".format(
+                            client_name).encode()))
                     client_choice = connection.recv(BUFFER_SIZE).decode()
                     if client_choice == "1":
                         connection.send(bytes("Please choose room ID:".encode()))
@@ -67,7 +76,8 @@ class Server(object):
                         new_room = self.create_room(new_room_id)
                         new_room.add_client_connection_to_dict(connection, client_name)
                         connection.send(bytes("Room number {} has been opened".format(new_room_id).encode()))
-
+                        """Running the forwarder method, no need to run in client choice 2 because the room already 
+                        exists and the method is running """
                     elif client_choice == "2":
                         connection.send(bytes(
                             "This is the room that are open: {}".format(list(self.rooms_dict.keys())).encode()))
