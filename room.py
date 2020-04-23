@@ -25,17 +25,16 @@ class Room(object):
         self.client_dict[client_socket] = client_user_name
         self.msg_queues[client_socket] = queue.Queue()
 
-    def login_new_client_to_room(self, new_client_in_room: socket):
+    def login_new_client_to_room(self, client_name: str):
         """
         Announces that client joined to room
-        @param new_client_in_room: the new client's connection :socket
+        @param client_name: the new client's name :str
         """
         for client in self.client_dict:
-            if client != new_client_in_room:
-                try:
-                    client.send(bytes("{} joined to the room".format(self.client_dict[new_client_in_room]).encode()))
-                except ConnectionResetError or ConnectionAbortedError:
-                    self.logout_client_from_room(client)
+            try:
+                client.send(bytes("{} joined to the room".format(client_name).encode()))
+            except ConnectionResetError or ConnectionAbortedError:
+                self.logout_client_from_room(client)
 
     def logout_client_from_room(self, connection_to_client_that_left: socket):
         """
@@ -45,7 +44,7 @@ class Room(object):
         for client in self.client_dict:
             if client != connection_to_client_that_left:
                 client.send(
-                    bytes("{} has left the room".format(self.client_dict[connection_to_client_that_left].encode())))
+                    bytes("{} has left the room".format(self.client_dict[connection_to_client_that_left]).encode()))
         del self.msg_queues[connection_to_client_that_left]
         del self.client_dict[connection_to_client_that_left]
 
@@ -67,12 +66,11 @@ class Room(object):
                 pass
 
     def forwarder(self):
-        """
-        Hopefully will do the magic in chat
-        """
-        while self.client_dict:
-            readable, writable, exceptional = select.select(self.client_dict, self.outputs, self.client_dict)
-            for client_connection in readable:
+        """ Hopefully will do the magic in chat """
+        while len(self.client_dict) > 1:
+            # readable, writable, exceptional = select.select(self.client_dict, self.outputs, self.client_dict)
+            print(self.msg_queues)
+            for client_connection in self.client_dict:
                 data = client_connection.recv(BUFFER_SIZE).decode()
                 if data:
                     self.msg_queues[client_connection].put(data)
@@ -81,7 +79,9 @@ class Room(object):
                 elif data == "Exit":
                     self.logout_client_from_room(client_connection)
                     self.outputs.remove(client_connection)
-            for client_connection in writable:
+                else:
+                    pass
+            for client_connection in self.outputs:
                 try:
                     next_msg = self.msg_queues[client_connection].get_nowait()
                 except queue.Empty:
