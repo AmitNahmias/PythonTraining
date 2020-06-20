@@ -1,8 +1,8 @@
 # imports are here:
 import socket
 
-
 # constants are here:
+BUFFER_SIZE = 1024
 
 
 class Room(object):
@@ -37,12 +37,27 @@ class Room(object):
         :param msg_to_send: the message that the server forwards
         :return:
         """
-        for connection in self.client_dict:
+        for connection in self.client_dict.keys():
             if connection != my_connection:
                 try:
                     connection.send(msg_to_send.encode())
                 except ConnectionAbortedError or ConnectionResetError:
                     self.logout_from_room(connection)
 
+    def recv_all(self):
+        """
+        receive messages from all users
+        :return:
+        """
+        for connection in self.client_dict.keys():
+            connection.recv(BUFFER_SIZE).decode()
+
     def room_handler(self):
-        pass
+        """
+        handle in the conversation in the room
+        :return:
+        """
+        while self.client_dict:
+            for client in self.client_dict.keys():
+                self.send_all(my_connection=client,
+                              msg_to_send=client.recv(BUFFER_SIZE).decode())

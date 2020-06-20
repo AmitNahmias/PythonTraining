@@ -36,12 +36,20 @@ class Server(object):
         :param room_id: room id :int
         :return: room instance :room
         """
+        # if room_id in self.rooms:
+
         new_room_instance = room.Room(room_id)
         self.new_rooms[room_id] = new_room_instance
         return new_room_instance
 
-    def move_room(self, room_instance: room):
-        pass
+    def move_room(self, room_id: int):
+        """
+        moving the room from the new one's dict to existing rooms dict
+        :param room_id: room id :int
+        :return:
+        """
+        self.rooms[room_id] = self.new_rooms[room_id]
+        self.new_rooms.pop(room_id)
 
     def client_handler(self, socket_to_client: socket):
         """
@@ -53,9 +61,15 @@ class Server(object):
         client_choice = socket_to_client.recv(BUFFER_SIZE).decode()
         if client_choice == "1":
             room_id = socket_to_client.recv(BUFFER_SIZE).decode()
-            room_instance = self.create_new_room(room_id=room_id)
-            room_instance.login_to_room(client_socket=socket_to_client,
-                                        client_user_name=user_name)
+            if room_id not in self.new_rooms.keys() and room_id not in self.rooms.keys():
+                room_instance = self.create_new_room(room_id=room_id)
+                room_instance.login_to_room(client_socket=socket_to_client,
+                                            client_user_name=user_name)
+                socket_to_client.send(bytes(
+                    "Room {} created successfully".format(room_id).encode()))
+            else:
+                socket_to_client.send(
+                    bytes("Room  {} is already exist".format(room_id).encode()))
         else:
             socket_to_client.send(bytes(
                 "This is the opened room: {}".format(self.rooms).encode()))
@@ -68,8 +82,18 @@ class Server(object):
         while True:
             client_socket, client_address = self.server_socket.accept()
             _thread.start_new_thread(
-                self.client_handler(socket_to_client=client_socket))
+                function=self.client_handler(socket_to_client=client_socket))
             if self.new_rooms:
-                for room in self.new_rooms:
-                    _thread.start_new_thread(room.room_handler)
-                    self.move_room(room_instance=room)
+                for room_id in self.new_rooms:
+                    self.move_room(room_id=room_id)
+                    _thread.start_new_thread(self.rooms[room_id].room_handler,
+                                             ())
+
+
+def main():
+    server_instance = Server()
+    server_instance.server_handler()
+
+
+if __name__ == '__main__':
+    main()

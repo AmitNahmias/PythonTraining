@@ -1,7 +1,7 @@
 """ This module is the client side """
 
 # imports are here:
-import socket
+import socket, _thread
 
 # constants are here:
 HOST = "127.0.0.1"
@@ -18,6 +18,16 @@ class Client(object):
         self.client_name = name
         self.client_socket = socket.socket()
 
+    def send_msg(self):
+        data_to_send = input()
+        while data_to_send != "~exit~":
+            self.client_socket.send(bytes(data_to_send.encode()))
+            data_to_send = input()
+
+    def recv_msg(self):
+        while True:
+            self.client_socket.recv(BUFFER_SIZE).decode()
+
     def connect_to_server(self):
         """
         connecting the client to the server
@@ -31,6 +41,11 @@ class Client(object):
         if client_choice == "1":
             room_id = input("Choose room id:")
             self.client_socket.send(bytes(room_id.encode()))
+            response_from_server = self.client_socket.recv(BUFFER_SIZE).decode()
+            print(response_from_server)
+            if response_from_server == "Room  {} is already exist".format(
+                    room_id):
+                exit()
         elif client_choice == "2":
             print(self.client_socket.recv(BUFFER_SIZE).decode())
             room_id = input("To which room you want to join?")
@@ -38,3 +53,15 @@ class Client(object):
         else:
             print("Value error! {} isn't in the options".format(client_choice))
             exit()
+        _thread.start_new_thread(function=self.send_msg())
+        _thread.start_new_thread(function=self.recv_msg())
+
+
+def main():
+    client_name = input("Enter name:")
+    client_instance = Client(client_name)
+    client_instance.connect_to_server()
+
+
+if __name__ == '__main__':
+    main()
